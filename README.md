@@ -1,1 +1,1 @@
-This is a backend project
+A video streaming platform just like Youtube
