@@ -228,4 +228,112 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     );
 });
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken }; 
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+    const { oldPassword, newPassword, confirmPassword } = req.body;
+
+    const user = await User.findById(req.user?._id);
+
+    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+
+    if(!isPasswordCorrect) {
+        throw new ApiError(401, "Incorrect old password");
+    }
+
+    user.password = newPassword;
+
+    if(newPassword !== confirmPassword) {
+        throw new ApiError(400, "New password and confirm password do not match");
+    }
+
+    await user.save({ validateBeforeSave: false });
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, null, "Password changed successfully"));
+});
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+    return res
+    .status(200)
+    .json(new ApiResponse(200, req.user, "Current User found successfully"));
+});
+
+const updateAccountDetails = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const { username, email, fullName } = req.body;
+
+    // Prepare update object
+    const updateData = {};
+
+    // Username
+    if (username) {
+        const existingUser = await User.findOne({ username, _id: { $ne: userId } });
+        if (existingUser) {
+            throw new ApiError(400, "Username already taken");
+        }
+        updateData.username = username.toLowerCase();
+    }
+
+    // Email
+    if (email) {
+        if (!validator.isEmail(email)) {
+            throw new ApiError(400, "Invalid email format");
+        }
+        const existingEmail = await User.findOne({ email, _id: { $ne: userId } });
+        if (existingEmail) {
+            throw new ApiError(400, "Email already in use");
+        }
+        updateData.email = email;
+    }
+
+    // Full Name
+    if (fullName) {
+        updateData.fullName = fullName;
+    }
+
+    // Avatar & CoverImage (from files)
+    const avatarLocalPath = req.files?.avatar?.[0]?.path;
+    const coverImageLocalPath = req.files?.coverImage?.[0]?.path;
+
+    if (avatarLocalPath) {
+        const avatar = await uploadOnCloudinary(avatarLocalPath);
+        if (!avatar) throw new ApiError(500, "Error uploading avatar");
+        updateData.avatar = avatar.url;
+    }
+
+    if (coverImageLocalPath) {
+        const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+        if (!coverImage) throw new ApiError(500, "Error uploading cover image");
+        updateData.coverImage = coverImage.url;
+    }
+
+    // Check if user actually sent something
+    if (Object.keys(updateData).length === 0) {
+        throw new ApiError(400, "No fields to update");
+    }
+
+    // Update user
+    const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { $set: updateData },
+        { new: true }
+    ).select("-password -refreshToken");
+
+    if (!updatedUser) {
+        throw new ApiError(404, "User not found");
+    } 
+
+    return res.status(200).json(
+        new ApiResponse(200, updatedUser, "Account updated successfully")
+    );
+});
+
+export { 
+    registerUser,
+    loginUser, 
+    logoutUser, 
+    refreshAccessToken,
+    changeCurrentPassword,
+    getCurrentUser,
+    updateAccountDetails
+}; 
