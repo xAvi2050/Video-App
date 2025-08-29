@@ -1,5 +1,11 @@
 import { Router } from "express";
-import { loginUser, logoutUser, registerUser, refreshAccessToken, changeCurrentPassword, updateAccountDetails } from "../controllers/user.controller.js";
+import { loginUser,
+    logoutUser, 
+    registerUser, 
+    refreshAccessToken, 
+    changeCurrentPassword, 
+    updateAccountDetails, 
+    deleteAccount } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
@@ -39,6 +45,11 @@ router.route("/account-update").post(
         { name: "coverImage", maxCount: 1 },
     ]),
     updateAccountDetails
+);
+
+router.route("/delete-account").post(
+    verifyJWT,
+    deleteAccount
 );
 
 export default router;

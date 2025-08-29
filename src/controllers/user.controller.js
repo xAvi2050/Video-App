@@ -350,6 +350,32 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     );
 });
 
+const deleteAccount = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  // Delete avatar
+  if (user.avatar?.public_id) {
+    await deleteFromCloudinary(user.avatar.public_id);
+  }
+
+  // Delete cover image
+  if (user.coverImage?.public_id) {
+    await deleteFromCloudinary(user.coverImage.public_id);
+  }
+
+  // Finally delete the user record
+  await User.findByIdAndDelete(req.user._id);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, "Account deleted successfully"));
+});
+
+
 export { 
     registerUser,
     loginUser, 
@@ -357,5 +383,6 @@ export {
     refreshAccessToken,
     changeCurrentPassword,
     getCurrentUser,
-    updateAccountDetails
+    updateAccountDetails,
+    deleteAccount
 }; 
