@@ -2,7 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import validator from "validator";
 import { User } from "../models/user.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 
@@ -86,9 +86,15 @@ const registerUser = asyncHandler(async (req, res) => {
         email,
         fullName,
         password,
-        avatar: avatar.url,
-        coverImage: coverImage?.url || "" 
-    })
+        avatar: {
+            url: avatar.url,
+            public_id: avatar.public_id
+        },
+        coverImage: coverImage ? {
+            url: coverImage.url,
+            public_id: coverImage.public_id
+        } : {}
+    });
 
     // Remove password and refreshToken from response
     const createdUser = await User.findById(user._id).select(
@@ -262,6 +268,12 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     const userId = req.user._id;
     const { username, email, fullName } = req.body;
 
+    // Find current user first
+    const currentUser = await User.findById(userId);
+    if (!currentUser) {
+        throw new ApiError(404, "User not found");
+    }
+
     // Prepare update object
     const updateData = {};
 
@@ -296,15 +308,25 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     const coverImageLocalPath = req.files?.coverImage?.[0]?.path;
 
     if (avatarLocalPath) {
+        // Delete old avatar
+        if (currentUser.avatar?.public_id) {
+            await deleteFromCloudinary(currentUser.avatar.public_id);
+        }
+        // Upload new one
         const avatar = await uploadOnCloudinary(avatarLocalPath);
         if (!avatar) throw new ApiError(500, "Error uploading avatar");
-        updateData.avatar = avatar.url;
+        updateData.avatar = { url: avatar.secure_url, public_id: avatar.public_id };
     }
 
     if (coverImageLocalPath) {
+        // Delete old cover
+        if (currentUser.coverImage?.public_id) {
+            await deleteFromCloudinary(currentUser.coverImage.public_id);
+        }
+        // Upload new one
         const coverImage = await uploadOnCloudinary(coverImageLocalPath);
         if (!coverImage) throw new ApiError(500, "Error uploading cover image");
-        updateData.coverImage = coverImage.url;
+        updateData.coverImage = { url: coverImage.secure_url, public_id: coverImage.public_id };
     }
 
     // Check if user actually sent something
