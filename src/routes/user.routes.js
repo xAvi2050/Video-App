@@ -1,11 +1,16 @@
 import { Router } from "express";
-import { loginUser,
+import { 
+    loginUser,
     logoutUser, 
     registerUser, 
     refreshAccessToken, 
     changeCurrentPassword, 
     updateAccountDetails, 
-    deleteAccount } from "../controllers/user.controller.js";
+    deleteAccount, 
+    getCurrentUser,
+    getUserChannelProfile,
+    getWatchHistory
+} from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
@@ -38,6 +43,11 @@ router.route("/change-password").post(
     changeCurrentPassword
 );
 
+router.route("/current-user").get(
+    verifyJWT,
+    getCurrentUser
+);
+
 router.route("/account-update").post(
     verifyJWT,
     upload.fields([
@@ -45,6 +55,16 @@ router.route("/account-update").post(
         { name: "coverImage", maxCount: 1 },
     ]),
     updateAccountDetails
+);
+
+router.route("/channel/:username").get(
+    verifyJWT,
+    getUserChannelProfile
+);
+
+router.route("/watch-history").get(
+    verifyJWT,
+    getWatchHistory
 );
 
 router.route("/delete-account").post(
