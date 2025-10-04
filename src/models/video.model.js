@@ -3,8 +3,8 @@ import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 
 const videoSchema = new Schema({
     videoFile: {
-        type: String,  // cloudinary url
-        required: true
+        url: { type: String, required: true },
+        public_id: { type: String, required: true }
     },
     title: {
         type: String,
@@ -15,8 +15,8 @@ const videoSchema = new Schema({
         required: true,
     },
     thumbnail: {
-        type: String,  // cloudinary url
-        required: true,
+        url: { type: String, required: true },
+        public_id: { type: String, required: true }
     },
     duration:{
         type: Number,
@@ -36,6 +36,10 @@ const videoSchema = new Schema({
         required: true
     }
 }, {timestamps: true});
+
+videoSchema.index({ views: 1 });
+videoSchema.index({ createdAt: 1 });
+videoSchema.index({ duration: 1 });
 
 videoSchema.plugin(mongooseAggregatePaginate);
 
