@@ -122,24 +122,41 @@ const getAllCommentsOfAVideo = asyncHandler(async (req, res) => {
             }
         },
         {
-            $unwind: "$ownerDetails" // $lookup always returns an array, unwind changes it to a plain object
+            $lookup: {
+                from: "likes",
+                localField: "_id",
+                foreignField: "comment",
+                as: "likes"
+            }
         },
-
-        // I will write the like functionality later to the comments 
-
+        {
+            $addFields: {
+                likesCount: { $size: "$likes" },
+                ownerDetails: { $arrayElemAt: ["$ownerDetails", 0] },
+                isLiked: {
+                    $cond: {
+                        if: { $in: [req.user?._id, "$likes.likedBy"] },
+                        then: true,
+                        else: false
+                    }
+                }
+            }
+        },
         {
             $sort: { createdAt: -1 } // sort by createdAt field in descending order
         },
         {
             $project: {
                 content: 1,
-                createdAt: 1,
-                updatedAt: 1,
                 ownerDetails: {
                     username: 1,
                     fullName: 1,
                     "avatar.url": 1
-                }
+                },
+                likesCount: 1,
+                isLiked: 1,
+                createdAt: 1,
+                updatedAt: 1
             }
         }
     ]);

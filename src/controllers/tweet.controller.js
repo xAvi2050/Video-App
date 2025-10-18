@@ -111,8 +111,29 @@ const getUserTweets = asyncHandler(async (req, res) => {
             }
         },
         {
+            $lookup: {
+                from: "likes",
+                localField: "_id",
+                foreignField: "tweet",
+                as: "likeDetails",
+                pipeline: [
+                    {
+                        $project: { likedBy: 1 }
+                    }
+                ]
+            }
+        },
+        {
             $addFields: {
-                ownerDetails: { $arrayElemAt: ["$ownerDetails", 0] }
+                ownerDetails: { $arrayElemAt: ["$ownerDetails", 0] },
+                likesCount: { $size: "$likeDetails" },
+                isLiked: {
+                    $cond: {
+                        if: {$in: [req.user?._id, "$likeDetails.likedBy"]},
+                        then: true,
+                        else: false
+                    }
+                }
             }
         },
         {
@@ -120,10 +141,12 @@ const getUserTweets = asyncHandler(async (req, res) => {
         },
         {
             $project: {
-                content: 1,
-                createdAt: 1,
                 ownerDetails: 1,
-                updatedAt: 1,
+                content: 1,
+                likesCount: 1,
+                isLiked: 1, 
+                createdAt: 1,
+                updatedAt: 1, 
             }
         }
     ]);
