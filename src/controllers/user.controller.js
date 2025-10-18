@@ -33,7 +33,7 @@ const registerUser = asyncHandler(async (req, res) => {
     // check for user creation
     // return response
 
-    const { username, email, fullName, password } = req.body;  
+    const { username, email, fullName, password, bio } = req.body;  
 
     // Empty fields check
     if(
@@ -52,6 +52,12 @@ const registerUser = asyncHandler(async (req, res) => {
     // Password length check
     if (password.length < 6) {
         throw new ApiError(400, "Password must be at least 6 characters long");
+    }
+
+    // bio
+    const bioValue = bio?.trim();
+    if (bioValue?.length > 500) {
+        throw new ApiError(400, "Bio cannot exceed 500 characters");
     }
 
     // Check if user already exists
@@ -87,6 +93,7 @@ const registerUser = asyncHandler(async (req, res) => {
         email,
         fullName,
         password,
+        bio: bioValue,
         avatar: {
             url: avatar.url,
             public_id: avatar.public_id
@@ -267,7 +274,7 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
     const userId = req.user._id;
-    const { username, email, fullName } = req.body;
+    const { username, email, fullName, bio } = req.body;
 
     // Find current user first
     const currentUser = await User.findById(userId);
@@ -302,6 +309,11 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     // Full Name
     if (fullName) {
         updateData.fullName = fullName;
+    }
+
+    // Bio
+    if(bio){
+        updateData.bio = bio
     }
 
     // Avatar & CoverImage (from files)

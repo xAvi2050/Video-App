@@ -32,6 +32,11 @@ const userSchema = new Schema({
         url: { type: String },
         public_id: { type: String }
     },
+    bio: {
+        type: String,
+        maxlength: 500,
+        default: ""
+    },
     watchHistory: [
         {
             type: Schema.Types.ObjectId,
