@@ -1,4 +1,4 @@
-# Video-App
+# VideoX
 
 A full-featured video streaming platform inspired by YouTube, built with JavaScript technologies.
 
